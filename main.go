@@ -17,6 +17,13 @@ var tasks = []Task{
 	{ID: 1, Title: "Buy a new pc", Description: "earn money", Status: "pending"},
 }
 
+func getTaskByID(c *gin.Context) {
+	id := c.Param("id")
+	c.JSON(http.StatusOK, gin.H{
+		"task_id": id,
+	})
+}
+
 func getTasks(c *gin.Context) {
 	c.JSON(http.StatusOK, tasks)
 }
@@ -46,6 +53,8 @@ func main() {
 	r.GET("/tasks", getTasks)
 
 	r.POST("/tasks", createTask)
+
+	r.GET("/tasks/:id", getTaskByID)
 
 	r.Run()
 }
