@@ -10,10 +10,9 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/tasks", handlers.GetTasks)
+	r.GET("/tasks/:id", handlers.GetTaskByID)
 
 	r.POST("/tasks", handlers.CreateTask)
-
-	r.GET("/tasks/:id", handlers.GetTaskByID)
 
 	r.Run()
 }
