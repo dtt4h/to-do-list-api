@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 	"to-do-list-api/models"
 
 	"github.com/gin-gonic/gin"
@@ -12,11 +13,20 @@ var tasks = []models.Task{
 }
 
 func GetTaskByID(c *gin.Context) {
-	// TODO: реализовать поиск задачи по ID
-	id := c.Param("id")
-	c.JSON(http.StatusOK, gin.H{
-		"task_id": id,
-	})
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid ID format | ID must be a number",
+		})
+	}
+
+	for _, task := range tasks {
+		if task.ID == id {
+			c.JSON(http.StatusOK, task)
+			return
+		}
+	}
 }
 
 func GetTasks(c *gin.Context) {
