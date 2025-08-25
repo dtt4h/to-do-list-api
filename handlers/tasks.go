@@ -51,3 +51,28 @@ func CreateTask(c *gin.Context) {
 		"task": newTask,
 	})
 }
+
+func UpdateTaskByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+	var updateData map[string]interface{}
+	if err := c.BindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON"})
+		return
+	}
+
+	for i := range tasks {
+		if tasks[i].ID == id {
+			if status, exists := updateData["status"]; exists {
+				tasks[i].Status = status.(string) // приведение типа
+			}
+			c.JSON(http.StatusOK, tasks[i])
+			return
+		}
+	}
+	c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+}

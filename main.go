@@ -14,5 +14,7 @@ func main() {
 
 	r.POST("/tasks", handlers.CreateTask)
 
+	r.PATCH("/tasks/:id", handlers.UpdateTaskByID)
+
 	r.Run()
 }
