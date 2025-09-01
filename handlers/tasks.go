@@ -1,16 +1,14 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
+	"to-do-list-api/database"
 	"to-do-list-api/models"
 
 	"github.com/gin-gonic/gin"
 )
-
-var tasks = []models.Task{
-	{ID: 1, Title: "Buy a new pc", Description: "earn money", Status: "pending"},
-}
 
 func GetTaskByID(c *gin.Context) {
 	idStr := c.Param("id")
@@ -19,17 +17,44 @@ func GetTaskByID(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "invalid ID format | ID must be a number",
 		})
+		return
 	}
 
-	for _, task := range tasks {
-		if task.ID == id {
-			c.JSON(http.StatusOK, task)
-			return
+	var task models.Task
+	err = database.DB.QueryRow("SELECT id, title, description, status FROM tasks WHERE id = ?", id).
+		Scan(&task.ID, &task.Title, &task.Description, &task.Status)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch task"})
 		}
+		return
 	}
+
+	c.JSON(http.StatusOK, task)
 }
 
 func GetTasks(c *gin.Context) {
+	rows, err := database.DB.Query("SELECT id, title, description, status FROM tasks")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tasks"})
+		return
+	}
+	defer rows.Close()
+
+	var tasks []models.Task
+	for rows.Next() {
+		var task models.Task
+		err := rows.Scan(&task.ID, &task.Title, &task.Description, &task.Status)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to scan task"})
+			return
+		}
+		tasks = append(tasks, task)
+	}
+
 	c.JSON(http.StatusOK, tasks)
 }
 
@@ -43,9 +68,20 @@ func CreateTask(c *gin.Context) {
 		return
 	}
 
-	newTask.ID = len(tasks) + 1
+	result, err := database.DB.Exec("INSERT INTO tasks (title, description, status) VALUES (?, ?, ?)",
+		newTask.Title, newTask.Description, newTask.Status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create task"})
+		return
+	}
 
-	tasks = append(tasks, newTask)
+	id, err := result.LastInsertId()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get task ID"})
+		return
+	}
+
+	newTask.ID = int(id)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"task": newTask,
@@ -65,16 +101,25 @@ func UpdateTaskByID(c *gin.Context) {
 		return
 	}
 
-	for i := range tasks {
-		if tasks[i].ID == id {
-			if status, exists := updateData["status"]; exists {
-				tasks[i].Status = status.(string) // приведение типа
-			}
-			c.JSON(http.StatusOK, tasks[i])
-			return
-		}
+	var task models.Task
+	err = database.DB.QueryRow("SELECT id, title, description, status FROM tasks WHERE id = ?", id).
+		Scan(&task.ID, &task.Title, &task.Description, &task.Status)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		return
 	}
-	c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+
+	if status, exists := updateData["status"]; exists {
+		task.Status = status.(string)
+	}
+
+	_, err = database.DB.Exec("UPDATE tasks SET status = ? WHERE id = ?", task.Status, task.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update task"})
+		return
+	}
+
+	c.JSON(http.StatusOK, task)
 }
 
 func DeleteTaskByID(c *gin.Context) {
@@ -86,12 +131,22 @@ func DeleteTaskByID(c *gin.Context) {
 		return
 	}
 
-	for i := range tasks {
-		if tasks[i].ID == id {
-			tasks = append(tasks[:i], tasks[i+1:]...)
-			c.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
-			return
-		}
+	result, err := database.DB.Exec("DELETE FROM tasks WHERE id = ?", id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete task"})
+		return
 	}
-	c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get deletion result"})
+		return
+	}
+
+	if rowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
 }

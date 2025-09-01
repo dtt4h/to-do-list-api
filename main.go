@@ -1,12 +1,17 @@
 package main
 
 import (
+	"to-do-list-api/database"
 	"to-do-list-api/handlers"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
+	// Инициализация базы данных
+	database.InitDB()
+	defer database.CloseDB()
+
 	r := gin.Default()
 
 	r.GET("/tasks", handlers.GetTasks)
