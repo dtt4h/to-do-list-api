@@ -19,7 +19,8 @@ Database:
 API:  
 - RESTful architecture  
 - JSON data format  
-- CRUD operations  
+- CRUD operations
+- JWT Authentication
 
 # 📚Endpoints  
 GET /tasks - get all tasks  
@@ -27,3 +28,4 @@ GET /tasks/:id - get task by ID
 POST /tasks - create new task  
 PATCH /tasks/:id - update task  
 DELETE /tasks/:id - delete task
+
