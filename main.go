@@ -16,5 +16,6 @@ func main() {
 
 	r.PATCH("/tasks/:id", handlers.UpdateTaskByID)
 
+	r.DELETE("/tasks/:id", handlers.DeleteTaskByID)
 	r.Run()
 }
