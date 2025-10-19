@@ -12,7 +12,7 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// Login обрабатывает запрос на аутентификацию
+// TODO: implement authentication logic /w database
 func Login(c *gin.Context) {
 	var loginReq LoginRequest
 	if err := c.ShouldBindJSON(&loginReq); err != nil {
@@ -20,9 +20,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Простая проверка учетных данных
 	if loginReq.Username == "admin" && loginReq.Password == "password" {
-		// Генерируем токен
 		token, err := auth.GenerateToken(loginReq.Username)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
