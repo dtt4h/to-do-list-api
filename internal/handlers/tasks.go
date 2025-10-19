@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
-	"to-do-list-api/database"
-	"to-do-list-api/models"
+	"to-do-list-api/internal/database"
+	"to-do-list-api/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -68,6 +68,10 @@ func CreateTask(c *gin.Context) {
 		return
 	}
 
+	if newTask.Status == "" {
+		newTask.Status = "pending"
+	}
+
 	result, err := database.DB.Exec("INSERT INTO tasks (title, description, status) VALUES (?, ?, ?)",
 		newTask.Title, newTask.Description, newTask.Status)
 	if err != nil {
@@ -109,11 +113,32 @@ func UpdateTaskByID(c *gin.Context) {
 		return
 	}
 
-	if status, exists := updateData["status"]; exists {
-		task.Status = status.(string)
+	if statusValue, exists := updateData["status"]; exists {
+		s, ok := statusValue.(string)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "status must be a string"})
+			return
+		}
+		task.Status = s
+	}
+	if titleValue, exists := updateData["title"]; exists {
+		s, ok := titleValue.(string)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "title must be a string"})
+			return
+		}
+		task.Title = s
+	}
+	if descValue, exists := updateData["description"]; exists {
+		s, ok := descValue.(string)
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "description must be a string"})
+			return
+		}
+		task.Description = s
 	}
 
-	_, err = database.DB.Exec("UPDATE tasks SET status = ? WHERE id = ?", task.Status, task.ID)
+	_, err = database.DB.Exec("UPDATE tasks SET title = ?, description = ?, status = ? WHERE id = ?", task.Title, task.Description, task.Status, task.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update task"})
 		return

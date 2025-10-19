@@ -1,9 +1,11 @@
 package main
 
 import (
-	"to-do-list-api/database"
-	"to-do-list-api/handlers"
-	"to-do-list-api/middleware"
+	"fmt"
+	"os"
+	"to-do-list-api/internal/database"
+	"to-do-list-api/internal/handlers"
+	"to-do-list-api/internal/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -14,6 +16,11 @@ func main() {
 	defer database.CloseDB()
 
 	r := gin.Default()
+
+	// Health check
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
 
 	// Публичные маршруты (не требуют авторизации)
 	r.POST("/login", handlers.Login)
@@ -29,5 +36,12 @@ func main() {
 		api.DELETE("/tasks/:id", handlers.DeleteTaskByID)
 	}
 
-	r.Run(":8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	if err := r.Run(":" + port); err != nil {
+		// log to stderr so container runtimes capture it
+		fmt.Fprintf(os.Stderr, "failed to start server: %v\n", err)
+	}
 }

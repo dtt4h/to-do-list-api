@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"log"
+	"os"
 
 	_ "modernc.org/sqlite"
 )
@@ -11,7 +12,11 @@ var DB *sql.DB
 
 func InitDB() {
 	var err error
-	DB, err = sql.Open("sqlite", "./tasks.db")
+	// Ensure the directory exists
+	if err := os.MkdirAll("./internal/database", 0755); err != nil {
+		log.Fatal("Failed to create database directory:", err)
+	}
+	DB, err = sql.Open("sqlite", "./internal/database/tasks.db")
 	if err != nil {
 		log.Fatal(err)
 	}

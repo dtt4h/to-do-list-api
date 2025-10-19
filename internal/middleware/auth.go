@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 	"strings"
-	"to-do-list-api/auth"
+	"to-do-list-api/internal/auth"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +19,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "auth header for mat must be Bearer {token}"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "auth header format must be Bearer {token}"})
 			c.Abort()
 			return
 		}
